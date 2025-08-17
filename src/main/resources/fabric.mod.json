@@ -1,0 +1,40 @@
+{
+	"schemaVersion": 1,
+	"id": "paleontologyunearthed",
+	"version": "${version}",
+	"name": "Paleontology Unearthed",
+	"description": "This is a mod that aims to integrate simple and engaging paleontology into Minecraft",
+	"authors": [
+		"FuzzyKiwi3"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "MIT",
+	"icon": "assets/paleontologyunearthed/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"fuzzykiwi3.paleontologyunearthed.PaleontologyUnearthed"
+		],
+		"fabric-datagen": [
+			"fuzzykiwi3.paleontologyunearthed.PaleontologyUnearthedDataGenerator"
+		],
+        "client": [
+            "fuzzykiwi3.paleontologyunearthed.PaleontologyUnearthedClient"
+        ]
+	},
+	"mixins": [
+		"paleontologyunearthed.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.17.2",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
