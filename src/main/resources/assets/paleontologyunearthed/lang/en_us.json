@@ -1,0 +1,10 @@
+{
+  "itemgroup.paleontologyunearthed.paleontology_unearthed_items": "Paleontology Unearthed",
+
+  "item.paleontologyunearthed.wooden_chisel": "Wooden Chisel",
+  "item.paleontologyunearthed.stone_chisel": "Stone Chisel",
+  "item.paleontologyunearthed.iron_chisel": "Iron Chisel",
+  "item.paleontologyunearthed.golden_chisel": "Golden Chisel",
+  "item.paleontologyunearthed.diamond_chisel": "Diamond Chisel",
+  "item.paleontologyunearthed.netherite_chisel": "Netherite Chisel"
+}

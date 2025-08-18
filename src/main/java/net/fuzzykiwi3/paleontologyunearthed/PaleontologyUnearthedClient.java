@@ -1,4 +1,4 @@
-package fuzzykiwi3.paleontologyunearthed;
+package net.fuzzykiwi3.paleontologyunearthed;
 
 import net.fabricmc.api.ClientModInitializer;
 

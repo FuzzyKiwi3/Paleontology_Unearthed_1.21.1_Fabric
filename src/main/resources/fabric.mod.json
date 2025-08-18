@@ -16,13 +16,13 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"fuzzykiwi3.paleontologyunearthed.PaleontologyUnearthed"
+			"net.fuzzykiwi3.paleontologyunearthed.PaleontologyUnearthed"
 		],
 		"fabric-datagen": [
-			"fuzzykiwi3.paleontologyunearthed.PaleontologyUnearthedDataGenerator"
+			"net.fuzzykiwi3.paleontologyunearthed.PaleontologyUnearthedDataGenerator"
 		],
         "client": [
-            "fuzzykiwi3.paleontologyunearthed.PaleontologyUnearthedClient"
+            "net.fuzzykiwi3.paleontologyunearthed.PaleontologyUnearthedClient"
         ]
 	},
 	"mixins": [

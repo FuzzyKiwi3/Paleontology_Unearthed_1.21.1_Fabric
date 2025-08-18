@@ -1,4 +1,4 @@
-package fuzzykiwi3.paleontologyunearthed.mixin;
+package net.fuzzykiwi3.paleontologyunearthed.mixin;
 
 import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;

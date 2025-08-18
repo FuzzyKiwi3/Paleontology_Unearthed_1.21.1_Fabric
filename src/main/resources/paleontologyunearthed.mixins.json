@@ -1,9 +1,10 @@
 {
 	"required": true,
-	"package": "fuzzykiwi3.paleontologyunearthed.mixin",
+	"package": "net.fuzzykiwi3.paleontologyunearthed.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"ExampleMixin"
+		"ExampleMixin",
+        "BlockChiselProgressMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
