@@ -5,6 +5,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fuzzykiwi3.paleontologyunearthed.block.ModBlocks;
 import net.fuzzykiwi3.paleontologyunearthed.item.ModItemGroups;
 import net.fuzzykiwi3.paleontologyunearthed.item.ModItems;
+import net.fuzzykiwi3.paleontologyunearthed.sound.ModSounds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +19,7 @@ public class PaleontologyUnearthed implements ModInitializer {
         ModItemGroups.registerItemGroups();
         ModBlocks.registerModBlocks();
         ModItems.registerModItems();
+        ModSounds.registerSounds();
 
 	}
 }

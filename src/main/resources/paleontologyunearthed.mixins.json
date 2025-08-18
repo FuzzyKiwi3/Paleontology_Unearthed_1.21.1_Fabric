@@ -3,8 +3,7 @@
 	"package": "net.fuzzykiwi3.paleontologyunearthed.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"ExampleMixin",
-        "BlockChiselProgressMixin"
+		"ExampleMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

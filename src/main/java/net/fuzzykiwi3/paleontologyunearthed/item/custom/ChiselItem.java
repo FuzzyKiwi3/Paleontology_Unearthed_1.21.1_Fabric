@@ -1,6 +1,6 @@
 package net.fuzzykiwi3.paleontologyunearthed.item.custom;
 
-import net.fuzzykiwi3.paleontologyunearthed.util.BlockChiselProgressMixinInterface;
+import net.fuzzykiwi3.paleontologyunearthed.sound.ModSounds;
 import net.fuzzykiwi3.paleontologyunearthed.util.ModTags;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
@@ -9,8 +9,12 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.item.*;
+import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
 import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.Registries;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -31,6 +35,8 @@ public class ChiselItem extends ToolItem {
     private static final int MAX_CHISEL_TIME = 200;
     private ToolMaterial CHISEL_MATERIAL;
     private float CHISEL_PROGRESS = 0;
+    private float COOLDOWN_TICKS = 0;
+    private BlockPos PREVIOUS_BLOCK_POS = null;
 
     // Help from KaupenJoe's 1.21 Fabric Modding tutorial
 
@@ -53,14 +59,52 @@ public class ChiselItem extends ToolItem {
         CHISEL_MATERIAL = toolMaterial;
     }
 
-
-    private float getChiselProgressPerTick(Block block) {
-        return (CHISEL_MATERIAL.getMiningSpeedMultiplier() / block.getHardness()) / 30;
+    private BlockPos getPreviousBlockPos() {
+        return PREVIOUS_BLOCK_POS;
     }
 
+    private void setPreviousBlockPos(BlockPos value) {
+        PREVIOUS_BLOCK_POS = value;
+    }
 
-    private boolean chiselingIsComplete(BlockChiselProgressMixinInterface block) {
-        return block.getChiselProgress() >= 1;
+    private void resetPreviousBlockPos() {
+        PREVIOUS_BLOCK_POS = null;
+    }
+
+    private void startChiselCooldown() {
+        COOLDOWN_TICKS = 10;
+    }
+
+    private void reduceCooldown(int reduction) {
+        COOLDOWN_TICKS -= reduction;
+    }
+
+    private boolean onCooldown() {
+        return COOLDOWN_TICKS > 0;
+    }
+
+    private void setChiselProgress(float newValue) {
+        CHISEL_PROGRESS = newValue;
+    }
+
+    private float getChiselProgress() {
+        return CHISEL_PROGRESS;
+    }
+
+    private void increaseChiselProgress(float increaseAmount) {
+        setChiselProgress(getChiselProgress() + increaseAmount);
+    }
+
+    private float getChiselProgressPerTick(Block block) {
+        if (block.getDefaultState().isIn(ModTags.Blocks.IS_CHISELABLE)) {
+            return (CHISEL_MATERIAL.getMiningSpeedMultiplier() / block.getHardness()) / 30;
+        } else {
+            return 0;
+        }
+    }
+
+    private boolean chiselingIsComplete() {
+        return getChiselProgress() >= 1;
     }
 
 
@@ -86,47 +130,59 @@ public class ChiselItem extends ToolItem {
 
     @Override
     public void usageTick(World world, LivingEntity user, ItemStack stack, int remainingUseTicks) {
-        if (remainingUseTicks >= 0 && user instanceof PlayerEntity playerEntity) {
+        if (remainingUseTicks >= 0 && user instanceof PlayerEntity playerEntity && !onCooldown()) {
             HitResult hitResult = this.getHitResult(playerEntity);
             if (hitResult instanceof BlockHitResult blockHitResult && hitResult.getType() == HitResult.Type.BLOCK) {
                 int i = this.getMaxUseTime(stack, user) - remainingUseTicks + 1;
                 boolean bl = i % 10 == 5;
                 if (bl) {
                     BlockPos blockPos = blockHitResult.getBlockPos();
+                    if (getPreviousBlockPos() == null
+                        || (blockPos.getX() != getPreviousBlockPos().getX()
+                            || blockPos.getY() != getPreviousBlockPos().getY()
+                            || blockPos.getZ() != getPreviousBlockPos().getZ())) {
+                        setChiselProgress(0);
+                    }
+                    setPreviousBlockPos(blockPos);
                     BlockState blockState = world.getBlockState(blockPos);
                     Block block = blockState.getBlock();
                     Arm arm = user.getActiveHand() == Hand.MAIN_HAND ? playerEntity.getMainArm() : playerEntity.getMainArm().getOpposite();
                     if (blockState.hasBlockBreakParticles() && blockState.getRenderType() != BlockRenderType.INVISIBLE) {
                         this.addDustParticles(world, blockHitResult, blockState, user.getRotationVec(0.0F), arm);
                     }
-                    
-                    SoundEvent soundEvent;
+
                     if (blockState.getBlock().getDefaultState().isIn(ModTags.Blocks.IS_CHISELABLE)) {
-                        soundEvent = SoundEvents.ITEM_AXE_SCRAPE;
-                    } else {
-                        soundEvent = SoundEvents.BLOCK_STONE_HIT;
+                        world.playSound(playerEntity, blockPos, ModSounds.CHISEL_USE, SoundCategory.BLOCKS);
                     }
-                    world.playSound(playerEntity, blockPos, soundEvent, SoundCategory.BLOCKS);
-                    if (CHISEL_MAP.containsKey(block) && block.getDefaultState().isIn(ModTags.Blocks.IS_CHISELABLE)) {
 
-                        BlockEntity blockEntity = world.getBlockEntity(blockPos);
-                        if (blockEntity instanceof BlockChiselProgressMixinInterface blockWithChiselProgress) {
-                            blockWithChiselProgress.increaseChiselProgress(getChiselProgressPerTick(block));
+                    if (CHISEL_MAP.containsKey(block) && block.getDefaultState().isIn(ModTags.Blocks.IS_CHISELABLE)
+                        && !world.isClient()) {
+                        increaseChiselProgress(getChiselProgressPerTick(block));
 
-                            boolean bl2 = chiselingIsComplete(blockWithChiselProgress);
-                            if (bl2) {
-                                world.setBlockState(blockPos, CHISEL_MAP.get(block).getDefaultState());
-                                blockWithChiselProgress.setChiselProgress(0);
-                                EquipmentSlot equipmentSlot = stack.equals(playerEntity.getEquippedStack(EquipmentSlot.OFFHAND)) ? EquipmentSlot.OFFHAND : EquipmentSlot.MAINHAND;
-                                stack.damage(1, user, equipmentSlot);
+                        if (chiselingIsComplete()) {
+                            if (user instanceof ServerPlayerEntity serverPlayer) {
+                                serverPlayer.networkHandler.sendPacket(new PlaySoundS2CPacket(
+                                        Registries.SOUND_EVENT.getEntry(SoundEvents.BLOCK_GRINDSTONE_USE), SoundCategory.BLOCKS,
+                                        blockPos.getX() + 0.5, blockPos.getY() + 0.5, blockPos.getZ() + 0.5,
+                                        1.0f, 1.0f, 0L));
                             }
+                            world.setBlockState(blockPos, CHISEL_MAP.get(block).getDefaultState());
+                            stack.damage(1, ((ServerWorld) world), ((ServerPlayerEntity) user),
+                                    item -> user.sendEquipmentBreakStatus(item, EquipmentSlot.MAINHAND));
+                            setChiselProgress(0);
+                            resetPreviousBlockPos();
+                            startChiselCooldown();
+                            user.stopUsingItem();
                         }
                     }
                 }
             } else {
+                setChiselProgress(0);
                 user.stopUsingItem();
             }
         } else {
+            reduceCooldown(1);
+            setChiselProgress(0);
             user.stopUsingItem();
         }
     }
