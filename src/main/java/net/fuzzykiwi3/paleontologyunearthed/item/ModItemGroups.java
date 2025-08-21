@@ -2,6 +2,7 @@ package net.fuzzykiwi3.paleontologyunearthed.item;
 
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fuzzykiwi3.paleontologyunearthed.PaleontologyUnearthed;
+import net.fuzzykiwi3.paleontologyunearthed.block.ModBlocks;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -18,6 +19,9 @@ public class ModItemGroups {
                     .entries((displayContext, entries) -> {
 
                         // Add entries here:
+                        entries.add(ModBlocks.SUSPICIOUS_STONE);
+                        entries.add(ModBlocks.SUSPICIOUS_COBBLESTONE);
+                        entries.add(ModBlocks.SUSPICIOUS_SANDSTONE);
                         entries.add(ModItems.WOODEN_CHISEL);
                         entries.add(ModItems.STONE_CHISEL);
                         entries.add(ModItems.IRON_CHISEL);

@@ -1,6 +1,10 @@
 {
   "itemgroup.paleontologyunearthed.paleontology_unearthed_items": "Paleontology Unearthed",
 
+  "block.paleontologyunearthed.suspicious_stone": "Suspicious Stone",
+  "block.paleontologyunearthed.suspicious_cobblestone": "Suspicious Cobblestone",
+  "block.paleontologyunearthed.suspicious_sandstone": "Suspicious Sandstone",
+
   "item.paleontologyunearthed.wooden_chisel": "Wooden Chisel",
   "item.paleontologyunearthed.stone_chisel": "Stone Chisel",
   "item.paleontologyunearthed.iron_chisel": "Iron Chisel",

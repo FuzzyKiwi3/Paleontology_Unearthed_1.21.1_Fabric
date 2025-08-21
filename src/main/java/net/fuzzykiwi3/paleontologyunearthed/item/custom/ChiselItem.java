@@ -1,5 +1,8 @@
 package net.fuzzykiwi3.paleontologyunearthed.item.custom;
 
+import com.google.common.collect.ImmutableMap.Builder;
+
+import net.fuzzykiwi3.paleontologyunearthed.block.ModBlocks;
 import net.fuzzykiwi3.paleontologyunearthed.sound.ModSounds;
 import net.fuzzykiwi3.paleontologyunearthed.util.ModTags;
 import net.minecraft.block.*;
@@ -26,7 +29,7 @@ import java.util.Map;
 
 public class ChiselItem extends ToolItem {
     private static final int MAX_CHISEL_TIME = 200;
-    private static final int SOUND_INTERVAL = 15; // ticks between chisel sounds
+    private static final int SOUND_INTERVAL = 10; // ticks between chisel sounds
     private static final int COOLDOWN_TICKS = 10;
 
     private final ToolMaterial material;
@@ -35,17 +38,20 @@ public class ChiselItem extends ToolItem {
     private BlockPos lastBlockPos = null;
     private int soundTickCounter = 0;
 
-    private static final Map<Block, Block> CHISEL_MAP = Map.of(
-            Blocks.STONE_BRICKS, Blocks.CHISELED_STONE_BRICKS,
-            Blocks.COBBLED_DEEPSLATE, Blocks.CHISELED_DEEPSLATE,
-            Blocks.TUFF, Blocks.CHISELED_TUFF,
-            Blocks.TUFF_BRICKS, Blocks.CHISELED_TUFF_BRICKS,
-            Blocks.SANDSTONE, Blocks.CHISELED_SANDSTONE,
-            Blocks.RED_SANDSTONE, Blocks.CHISELED_RED_SANDSTONE,
-            Blocks.NETHER_BRICKS, Blocks.CHISELED_NETHER_BRICKS,
-            Blocks.POLISHED_BLACKSTONE, Blocks.CHISELED_POLISHED_BLACKSTONE,
-            Blocks.QUARTZ_BLOCK, Blocks.CHISELED_QUARTZ_BLOCK
-    );
+    private static final Map<Block, Block> CHISEL_MAP = new Builder<Block, Block>()
+        .put(Blocks.STONE_BRICKS, Blocks.CHISELED_STONE_BRICKS)
+        .put(Blocks.COBBLED_DEEPSLATE, Blocks.CHISELED_DEEPSLATE)
+        .put(Blocks.TUFF, Blocks.CHISELED_TUFF)
+        .put(Blocks.TUFF_BRICKS, Blocks.CHISELED_TUFF_BRICKS)
+        .put(Blocks.SANDSTONE, Blocks.CHISELED_SANDSTONE)
+        .put(Blocks.RED_SANDSTONE, Blocks.CHISELED_RED_SANDSTONE)
+        .put(Blocks.NETHER_BRICKS, Blocks.CHISELED_NETHER_BRICKS)
+        .put(Blocks.POLISHED_BLACKSTONE, Blocks.CHISELED_POLISHED_BLACKSTONE)
+        .put(Blocks.QUARTZ_BLOCK, Blocks.CHISELED_QUARTZ_BLOCK)
+        .put(ModBlocks.SUSPICIOUS_STONE, ModBlocks.SUSPICIOUS_COBBLESTONE)
+        .put(ModBlocks.SUSPICIOUS_COBBLESTONE, Blocks.SUSPICIOUS_GRAVEL)
+        .put(ModBlocks.SUSPICIOUS_SANDSTONE, Blocks.SUSPICIOUS_SAND)
+            .build();
 
     public ChiselItem(ToolMaterial toolMaterial, Settings settings) {
         super(toolMaterial, settings);
@@ -59,22 +65,25 @@ public class ChiselItem extends ToolItem {
                 : 0;
     }
 
-    private boolean isComplete() {
-        return progress >= 1;
-    }
-
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
         PlayerEntity player = context.getPlayer();
         if (player != null && getHitResult(player).getType() == HitResult.Type.BLOCK) {
-            player.setCurrentHand(context.getHand());
+            BlockState state = context.getWorld().getBlockState(context.getBlockPos());
+            if (state.isIn(ModTags.Blocks.IS_CHISELABLE) && CHISEL_MAP.containsKey(state.getBlock())) {
+                player.setCurrentHand(context.getHand());
+            }
         }
         return ActionResult.CONSUME;
     }
 
     @Override
     public UseAction getUseAction(ItemStack stack) {
-        return UseAction.BRUSH;
+        if (cooldown == 0) {
+            return UseAction.BRUSH;
+        } else {
+            return UseAction.NONE;
+        }
     }
 
     @Override
@@ -84,6 +93,7 @@ public class ChiselItem extends ToolItem {
 
     @Override
     public void usageTick(World world, LivingEntity user, ItemStack stack, int remainingUseTicks) {
+
         if (!(user instanceof PlayerEntity player)) {
             resetChisel(user);
             return;
@@ -101,56 +111,62 @@ public class ChiselItem extends ToolItem {
 
         boolean blockIsChiselable = state.isIn(ModTags.Blocks.IS_CHISELABLE) && CHISEL_MAP.containsKey(block);
 
+        // If the block is not chiselable, stop immediately (prevents sound playing)
+        if (!blockIsChiselable) {
+            resetChisel(user);
+            return;
+        }
+
         // Reset progress only if we moved to a new block
         if (lastBlockPos == null || !lastBlockPos.equals(pos)) {
             if (lastBlockPos != null
-                && !world.getBlockState(lastBlockPos).isIn(ModTags.Blocks.IS_CHISELABLE)
-                && blockIsChiselable) {
+                    && !world.getBlockState(lastBlockPos).isIn(ModTags.Blocks.IS_CHISELABLE)
+                    && blockIsChiselable) {
                 soundTickCounter = 0;
             }
             progress = 0;
         }
         lastBlockPos = pos;
 
-        if (blockIsChiselable && soundTickCounter == 0) {
-            addDustParticles(world, blockHit, state, user.getRotationVec(0), player.getMainArm());
-        }
+        if (cooldown == 0) {
+            if (blockIsChiselable && soundTickCounter == 0) {
+                addDustParticles(world, blockHit, state, user.getRotationVec(0), player.getMainArm());
+            }
 
-        // Chiseling Progress & Completion
-        if (blockIsChiselable && !world.isClient()) {
-            progress += getProgressPerTick(block);
+            // Chiseling Progress & Completion
+            if (blockIsChiselable && !world.isClient()) {
+                progress += getProgressPerTick(block);
 
-            if (progress < 1) {
-                if (soundTickCounter == 0) {
+                if (progress < 1) {
+                    if (soundTickCounter == 0) {
+                        if (user instanceof ServerPlayerEntity serverPlayer) {
+                            serverPlayer.networkHandler.sendPacket(new PlaySoundS2CPacket(
+                                    Registries.SOUND_EVENT.getEntry(ModSounds.CHISEL_USE),
+                                    SoundCategory.BLOCKS,
+                                    pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                                    1.0f, 1.0f, 0L));
+                        }
+                    }
+                    soundTickCounter++;
+                    if (soundTickCounter >= SOUND_INTERVAL) {
+                        soundTickCounter = 0;
+                    }
+                } else if (progress >= 1) {
+                    // Play only the grindstone completion sound
                     if (user instanceof ServerPlayerEntity serverPlayer) {
                         serverPlayer.networkHandler.sendPacket(new PlaySoundS2CPacket(
-                                Registries.SOUND_EVENT.getEntry(ModSounds.CHISEL_USE),
+                                Registries.SOUND_EVENT.getEntry(SoundEvents.BLOCK_GRINDSTONE_USE),
                                 SoundCategory.BLOCKS,
                                 pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
                                 1.0f, 1.0f, 0L));
                     }
-                }
-                soundTickCounter++;
-                if (soundTickCounter >= SOUND_INTERVAL) {
-                    soundTickCounter = 0;
-                }
-            }
 
-            else if (progress >= 1) {
-                // Play only the grindstone completion sound
-                if (user instanceof ServerPlayerEntity serverPlayer) {
-                    serverPlayer.networkHandler.sendPacket(new PlaySoundS2CPacket(
-                            Registries.SOUND_EVENT.getEntry(SoundEvents.BLOCK_GRINDSTONE_USE),
-                            SoundCategory.BLOCKS,
-                            pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                            1.0f, 1.0f, 0L));
+                    world.setBlockState(pos, CHISEL_MAP.get(block).getDefaultState());
+                    stack.damage(1, (ServerWorld) world, (ServerPlayerEntity) user,
+                            item -> user.sendEquipmentBreakStatus(item, EquipmentSlot.MAINHAND));
+
+                    resetChisel(user);
                 }
-
-                world.setBlockState(pos, CHISEL_MAP.get(block).getDefaultState());
-                stack.damage(1, (ServerWorld) world, (ServerPlayerEntity) user,
-                        item -> user.sendEquipmentBreakStatus(item, EquipmentSlot.MAINHAND));
-
-                resetChisel(user);
             }
         }
 
