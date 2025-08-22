@@ -1,6 +1,8 @@
 package net.fuzzykiwi3.paleontologyunearthed.block;
 
+import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.fuzzykiwi3.paleontologyunearthed.PaleontologyUnearthed;
+import net.fuzzykiwi3.paleontologyunearthed.block.custom.ModChiselTempBlockstate;
 import net.fuzzykiwi3.paleontologyunearthed.block.custom.ModSuspiciousBlock;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.NoteBlockInstrument;
@@ -13,9 +15,11 @@ import net.minecraft.util.Identifier;
 public class ModBlocks {
 
     // Add blocks here:
-    public static final Block SUSPICIOUS_STONE = registerBlock("suspicious_stone", new ModSuspiciousBlock(AbstractBlock.Settings.create().mapColor(MapColor.STONE_GRAY).instrument(NoteBlockInstrument.BASEDRUM).requiresTool().strength(1.5F, 6.0F)));
-    public static final Block SUSPICIOUS_COBBLESTONE = registerBlock("suspicious_cobblestone", new ModSuspiciousBlock(AbstractBlock.Settings.create().mapColor(MapColor.STONE_GRAY).instrument(NoteBlockInstrument.BASEDRUM).requiresTool().strength(2.0F, 6.0F)));
-    public static final Block SUSPICIOUS_SANDSTONE = registerBlock("suspicious_sandstone", new ModSuspiciousBlock(AbstractBlock.Settings.create().mapColor(MapColor.PALE_YELLOW).instrument(NoteBlockInstrument.BASEDRUM).requiresTool().strength(0.8F)));
+    public static final Block STONE_BRICKS_TEMP = registerBlock("stone_bricks_temp", new ModChiselTempBlockstate(FabricBlockSettings.copyOf(Blocks.STONE_BRICKS)));
+
+    public static final Block SUSPICIOUS_STONE = registerBlock("suspicious_stone", new ModSuspiciousBlock(FabricBlockSettings.copyOf(Blocks.STONE)));
+    public static final Block SUSPICIOUS_COBBLESTONE = registerBlock("suspicious_cobblestone", new ModSuspiciousBlock(FabricBlockSettings.copyOf(Blocks.COBBLESTONE)));
+    public static final Block SUSPICIOUS_SANDSTONE = registerBlock("suspicious_sandstone", new ModSuspiciousBlock(FabricBlockSettings.copyOf(Blocks.SANDSTONE)));
 
     private static Block registerBlock(String name, Block block) {
         registerBlockItem(name, block);

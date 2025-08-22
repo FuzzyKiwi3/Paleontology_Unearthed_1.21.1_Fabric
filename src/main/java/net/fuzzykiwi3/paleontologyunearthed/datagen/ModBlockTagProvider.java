@@ -33,6 +33,8 @@ public class ModBlockTagProvider extends FabricTagProvider.BlockTagProvider {
                 .add(ModBlocks.SUSPICIOUS_SANDSTONE);
 
         getOrCreateTagBuilder(BlockTags.PICKAXE_MINEABLE)
+                .add(ModBlocks.STONE_BRICKS_TEMP)
+
                 .add(ModBlocks.SUSPICIOUS_STONE)
                 .add(ModBlocks.SUSPICIOUS_COBBLESTONE)
                 .add(ModBlocks.SUSPICIOUS_SANDSTONE);
